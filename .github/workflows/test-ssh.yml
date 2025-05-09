@@ -15,6 +15,10 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -p 2222 -H ${{ secrets.MOCK_DEV_IP_ADDRESS }} >> ~/.ssh/known_hosts || echo "ssh-keyscan failed"
 
+        # Start the ssh-agent and add the SSH key with passphrase
+        eval "$(ssh-agent -s)"  # Start the ssh-agent
+        echo "${{ secrets.SSH_KEY_PASSPHRASE }}" | ssh-add -p ~/.ssh/id_rsa  # Add the private key to the agent with the passphrase
+
     - name: Debug SSH key and known_hosts
       run: |
         echo "Private key length: $(wc -c < ~/.ssh/id_rsa)"
@@ -23,4 +27,4 @@ jobs:
 
     - name: Test SSH connection
       run: |
-        ssh -p 2222 ${{ secrets.MOCK_DEV_USERNAME }}@${{ secrets.MOCK_DEV_IP_ADDRESS }} "echo 'Connected! Creating test folder...'; mkdir -p ~/github-action-test && echo '✅ Done.'"
+        ssh -o StrictHostKeyChecking=no -p 2222 ${{ secrets.MOCK_DEV_USERNAME }}@${{ secrets.MOCK_DEV_IP_ADDRESS }} "echo 'Connected! Creating test folder...'; mkdir -p ~/github-action-test && echo '✅ Done.'"
