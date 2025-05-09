@@ -5,25 +5,16 @@ on:
 
 jobs:
   ssh-test:
-    runs-on: [self-hosted]  # Use your Windows self-hosted runner
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Set up SSH key (PowerShell)
-        shell: pwsh
-        run: |
-          $sshDir = "$env:USERPROFILE\.ssh"
-          if (!(Test-Path -Path $sshDir)) {
-            New-Item -ItemType Directory -Path $sshDir | Out-Null
-          }
-          $privateKey = @"
-${{ secrets.MOCK_DEV_PRIVATE_KEY }}
-"@
-          Set-Content -Path "$sshDir\id_rsa" -Value $privateKey -Encoding ascii
-          icacls "$sshDir\id_rsa" /inheritance:r /grant:r "$env:USERNAME:R"
-          ssh-keyscan -p 2222 -H ${{ secrets.MOCK_DEV_IP_ADDRESS }} | Out-File -Encoding ascii -Append "$sshDir\known_hosts"
+    - name: Set up SSH key and known_hosts
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.MOCK_DEV_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -p 2222 -H ${{ secrets.MOCK_DEV_IP_ADDRESS }} >> ~/.ssh/known_hosts
 
-      - name: Test SSH connection
-        shell: pwsh
-        run: |
-          $sshDir = "$env:USERPROFILE\.ssh"
-          ssh -i "$sshDir\id_rsa" -p 2222 ${{ secrets.MOCK_DEV_USERNAME }}@${{ secrets.MOCK_DEV_IP_ADDRESS }} "echo 'Connected! Creating test folder...'; mkdir -p ~/github-action-test && echo '✅ Done.'"
+    - name: Test SSH connection
+      run: |
+        ssh -i ~/.ssh/id_rsa -p 2222 ${{ secrets.MOCK_DEV_USERNAME }}@${{ secrets.MOCK_DEV_IP_ADDRESS }} "echo 'Connected! Creating test folder...'; mkdir -p ~/github-action-test && echo '✅ Done.'"
