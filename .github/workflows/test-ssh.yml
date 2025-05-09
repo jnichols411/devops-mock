@@ -14,10 +14,11 @@ jobs:
         echo "${{ secrets.MOCK_DEV_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -p 2222 -H ${{ secrets.MOCK_DEV_IP_ADDRESS }} >> ~/.ssh/known_hosts || echo "ssh-keyscan failed"
+        # ssh-keyscan -H ${{ secrets.MOCK_DEV_IP_ADDRESS }} >> ~/.ssh/known_hosts
 
         # Start the ssh-agent and add the SSH key with passphrase
         eval "$(ssh-agent -s)"  # Start the ssh-agent
-        echo "${{ secrets.SSH_KEY_PASSPHRASE }}" | ssh-add -p ~/.ssh/id_rsa  # Add the private key to the agent with the passphrase
+        echo "${{ secrets.MOCK_DEV_SSH_PASSPHRASE }}" | ssh-add -p ~/.ssh/id_rsa  # Add the private key to the agent with the passphrase
 
     - name: Debug SSH key and known_hosts
       run: |
