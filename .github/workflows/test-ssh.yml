@@ -13,8 +13,8 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.MOCK_DEV_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -p 2222 -H ${{ secrets.MOCK_DEV_IP_ADDRESS }} >> ~/.ssh/known_hosts || echo "ssh-keyscan failed"
-        # ssh-keyscan -H ${{ secrets.MOCK_DEV_IP_ADDRESS }} >> ~/.ssh/known_hosts
+        # ssh-keyscan -p 2222 -H ${{ secrets.MOCK_DEV_IP_ADDRESS }} >> ~/.ssh/known_hosts || echo "ssh-keyscan failed"
+        ssh-keyscan -H ${{ secrets.MOCK_DEV_IP_ADDRESS }} >> ~/.ssh/known_hosts
 
         # Start the ssh-agent and add the SSH key with passphrase
         eval "$(ssh-agent -s)"  # Start the ssh-agent
