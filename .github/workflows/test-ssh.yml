@@ -1,27 +1,21 @@
-name: Test SSH to VM
-
-on:
-  workflow_dispatch:
-
 jobs:
   ssh-test:
     runs-on: [self-hosted]
-
     steps:
-    - name: Set up SSH key
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.MOCK_DEV_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -p 2222 -H ${{ secrets.MOCK_DEV_IP_ADDRESS }} >> ~/.ssh/known_hosts
+      - name: Set up SSH key (Windows syntax)
+        shell: powershell
+        run: |
+          $sshDir = "$env:USERPROFILE\.ssh"
+          if (!(Test-Path -Path $sshDir)) {
+            New-Item -ItemType Directory -Path $sshDir
+          }
+          Set-Content -Path "$sshDir\id_rsa" -Value "${{ secrets.MOCK_DEV_PRIVATE_KEY }}"
+          icacls "$sshDir\id_rsa" /inheritance:r /grant:r "$($env:USERNAME):(R)"
+          
+          ssh-keyscan -p 2222 -H ${{ secrets.MOCK_DEV_IP_ADDRESS }} | Out-File -Encoding ascii -Append "$sshDir\known_hosts"
 
-    - name: Debug SSH key and known_hosts
-      run: |
-        echo "Private key length: $(wc -c < ~/.ssh/id_rsa)"
-        ls -la ~/.ssh  # Debugging: check permissions and key location
-        cat ~/.ssh/known_hosts  # Debugging: check known_hosts file
-
-    - name: Test SSH connection
-      run: |
-        # ssh -o StrictHostKeyChecking=no -p 2222 ${{ secrets.MOCK_DEV_USERNAME }}@${{ secrets.MOCK_DEV_IP_ADDRESS }} "echo 'Connected! Creating test folder...'; mkdir -p ~/github-action-test && echo '✅ Done.'"
-        ssh -i ~/.ssh/id_rsa -p 2222 ${{ secrets.MOCK_DEV_USERNAME }}@${{ secrets.MOCK_DEV_IP_ADDRESS }} "echo 'Connected! Creating test folder...'; mkdir -p ~/github-action-test && echo '✅ Done.'"
+      - name: Test SSH connection
+        shell: powershell
+        run: |
+          $sshDir = "$env:USERPROFILE\.ssh"
+          ssh -i "$sshDir\id_rsa" -p 2222 ${{ secrets.MOCK_DEV_USERNAME }}@${{ secrets.MOCK_DEV_IP_ADDRESS }} "echo 'Connected! Creating test folder...'; mkdir -p ~/github-action-test && echo '✅ Done.'"
