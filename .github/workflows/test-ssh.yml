@@ -8,6 +8,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Test network connectivity to VM
+      run: |
+        nc -zv ${{ secrets.MOCK_DEV_IP_ADDRESS }} 2222 || echo "Cannot reach VM on port 2222"
+
+    
     - name: Set up SSH key and known_hosts
       run: |
         mkdir -p ~/.ssh
