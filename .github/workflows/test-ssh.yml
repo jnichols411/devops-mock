@@ -1,4 +1,4 @@
-name: Test SSH to VM
+name: SSH Test to VM
 
 on:
   workflow_dispatch:
@@ -8,19 +8,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Set up SSH key
+    - name: Set up SSH key and known_hosts
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.MOCK_DEV_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H 10.10.10.185 >> ~/.ssh/known_hosts
 
-    - name: Debug SSH key and known_hosts
+        echo "Checking if VM is reachable via SSH port..."
+        nc -zv -w5 ${{ secrets.MOCK_DEV_IP_ADDRESS }} 22 || echo "❌ Cannot connect to port 22"
+
+        echo "Scanning host key..."
+        ssh-keyscan -p 22 -H ${{ secrets.MOCK_DEV_IP_ADDRESS }} >> ~/.ssh/known_hosts || echo "❌ ssh-keyscan failed"
+
+    - name: Print key and known_hosts info
       run: |
-        echo "Private key length: $(wc -c < ~/.ssh/id_rsa)"
-        ls -la ~/.ssh  # Debugging: check permissions and key location
-        cat ~/.ssh/known_hosts  # Debugging: check known_hosts file
+        echo "🔑 Private key length: $(wc -c < ~/.ssh/id_rsa)"
+        ls -la ~/.ssh
+        cat ~/.ssh/known_hosts
 
     - name: Test SSH connection
       run: |
-        ssh -i ~/.ssh/id_rsa -p 22 deploy@10.10.10.185 "echo 'Connected! Creating test folder...'; mkdir -p ~/github-action-test && echo '✅ Done.'"
+        ssh -v -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes -p 22 ${{ secrets.MOCK_DEV_USERNAME }}@${{ secrets.MOCK_DEV_IP_ADDRESS }} \
+          "echo '✅ Connected to VM! Running test command...'; mkdir -p ~/github-action-test && echo '✅ Directory created.'"
