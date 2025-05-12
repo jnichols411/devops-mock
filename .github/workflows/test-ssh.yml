@@ -13,7 +13,7 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.MOCK_DEV_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.MOCK_DEV_IP_ADDRESS }} >> ~/.ssh/known_hosts
+        ssh-keyscan -H 10.10.10.185 >> ~/.ssh/known_hosts
 
     - name: Debug SSH key and known_hosts
       run: |
@@ -23,4 +23,4 @@ jobs:
 
     - name: Test SSH connection
       run: |
-        ssh -i ~/.ssh/id_rsa -p 22 deploy@${{ secrets.MOCK_DEV_IP_ADDRESS }} "echo 'Connected! Creating test folder...'; mkdir -p ~/github-action-test && echo '✅ Done.'"
+        ssh -i ~/.ssh/id_rsa -p 22 deploy@10.10.10.185 "echo 'Connected! Creating test folder...'; mkdir -p ~/github-action-test && echo '✅ Done.'"
