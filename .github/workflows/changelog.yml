@@ -1,0 +1,32 @@
+name: Update Changelog on Release Push
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [release]
+
+jobs:
+  changelog:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update CHANGELOG.md
+        id: changelog
+        uses: requarks/changelog-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}            # current branch/tag name
+          writeToFile: true
+
+      - name: Commit updated CHANGELOG.md
+        if: steps.changelog.outputs.changes != ''
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add CHANGELOG.md
+          git commit -m "chore: update CHANGELOG.md"
+          git push
