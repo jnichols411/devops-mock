@@ -1,0 +1,24 @@
+name: Require PR Label
+
+on:
+  pull_request:
+    branches:
+      - release
+    types: [opened, reopened, labeled, unlabeled, synchronize]
+
+jobs:
+  check-label:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: mheap/github-action-required-labels@v5
+        with:
+          mode: exactly
+          count: 1
+          labels: |
+            major
+            minor
+            patch
+          add_comment: true
+          message: "❌ This PR must have exactly one of the following labels: `major`, `minor`, or `patch`."
