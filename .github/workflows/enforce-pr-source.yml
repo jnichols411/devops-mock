@@ -1,4 +1,4 @@
-name: Enforce PR Source Branch
+name: Enforce PR Source
 
 on:
   pull_request:
