@@ -1,0 +1,12 @@
+{
+  "name": "devops-mock",
+  "version": "1.0.0",
+  "description": "this is a practice repo for implementing the the new devops structure into TaxHive. This project will include the following:\r - branch structure\r - branch protection rules\r - tags\r - branch naming conventions\r - github actions\r - workflow & SOP",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
