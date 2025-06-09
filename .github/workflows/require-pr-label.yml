@@ -8,6 +8,7 @@ on:
 
 jobs:
   check-label:
+    name: Require PR Label
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
