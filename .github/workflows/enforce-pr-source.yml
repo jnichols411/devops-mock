@@ -3,7 +3,7 @@ name: Enforce PR Source Branch
 on:
   pull_request:
     branches:
-      - master
+      - production
       - release
       - testing
 
@@ -16,8 +16,8 @@ jobs:
           echo "Base branch: ${{ github.base_ref }}"
           echo "Head branch: ${{ github.head_ref }}"
 
-          if [[ "${{ github.base_ref }}" == "master" && "${{ github.head_ref }}" != "release" ]]; then
-            echo "❌ Pull requests to 'master' must originate from 'release'."
+          if [[ "${{ github.base_ref }}" == "production" && "${{ github.head_ref }}" != "release" ]]; then
+            echo "❌ Pull requests to 'production' must originate from 'release'."
             exit 1
           elif [[ "${{ github.base_ref }}" == "release" && "${{ github.head_ref }}" != "testing" ]]; then
             echo "❌ Pull requests to 'release' must originate from 'testing'."
