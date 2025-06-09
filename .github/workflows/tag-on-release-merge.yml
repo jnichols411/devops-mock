@@ -1,0 +1,26 @@
+name: Tag on Release PR Merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - release
+
+jobs:
+  semver_release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create SemVer Tag and Release
+        uses: K-Phoen/semver-release-action@v1.3.2
+        with:
+          release_branch: release
+          release_strategy: release
+          tag_format: v%major%.%minor%.%patch%
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
