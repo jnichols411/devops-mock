@@ -9,6 +9,7 @@ on:
 
 jobs:
   enforce-pr-source:
+    name: Enforce PR Source
     runs-on: ubuntu-latest
     steps:
       - name: Check PR source branch
