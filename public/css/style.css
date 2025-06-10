@@ -5,6 +5,7 @@
     --font-body: serif;
   
     /* colors */
+    --color-primary: white;
     --color-danger: red;
     --color-info: lightblue;
     --color-success: lightgreen;
