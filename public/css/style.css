@@ -5,6 +5,7 @@
     --font-body: serif;
   
     /* text */
+    --txt-size-sm: 12px;
     --txt-size-md: 16px;
 
     /* colors */
