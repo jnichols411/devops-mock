@@ -37,6 +37,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0         # full history
+          fetch-tags: true
 
       - name: Debug - Show branch heads and diff
         run: |
@@ -52,10 +55,8 @@ jobs:
       - name: Create Pull Request from release to production
         uses: peter-evans/create-pull-request@v7
         with:
-          fetch-depth: 0         # full history
-          fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: release-to-master         # head branch (source)
+          branch: release-to-production     # head branch (source)
           base: production                  # base branch (destination)
           title: 'Merge release into production'
           body: |
