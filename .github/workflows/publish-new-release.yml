@@ -1,0 +1,29 @@
+name: Publish New Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Adjust the tag pattern as needed
+
+jobs:
+  create_pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Pull Request from release to master
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: release-to-master
+          base: master
+          head: release
+          title: 'Merge release into master'
+          body: |
+            This pull request merges changes from the release branch into master.
+          commit-message: 'Merge release into master'
+          delete-branch: false
