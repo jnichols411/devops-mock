@@ -42,11 +42,10 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: release         # head branch (source)
-          base: production        # base branch (destination)
+          branch: release-to-master         # head branch (source)
+          base: production                  # base branch (destination)
           title: 'Merge release into production'
           body: |
             Automated PR: merging release into production after tagging
           commit-message: 'Merge release into production'
           delete-branch: false
-          push-to-fork: true
