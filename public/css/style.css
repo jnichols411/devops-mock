@@ -4,6 +4,9 @@
     --font-display: sans-serif;
     --font-body: serif;
   
+    /* text */
+    --txt-size-md: 16px;
+
     /* colors */
     --color-primary: white;
     --color-secondary: black;
