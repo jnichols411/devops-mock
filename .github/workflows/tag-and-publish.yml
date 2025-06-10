@@ -1,0 +1,51 @@
+name: Tag And Publish New Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - release
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # Create Tag
+  semver_release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create SemVer Tag and Release
+        uses: K-Phoen/semver-release-action@v1.3.2
+        with:
+          release_branch: release
+          release_strategy: release
+          tag_format: v%major%.%minor%.%patch%
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Publish New Release
+  create_pr:
+    needs: semver_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Pull Request from release to production
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: release-to-production
+          base: production
+          head: release
+          title: 'Merge release into production'
+          body: |
+            This pull request merges changes from the release branch into production.
+          commit-message: 'Merge release into production'
+          delete-branch: false
