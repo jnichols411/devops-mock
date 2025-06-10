@@ -19,11 +19,11 @@ jobs:
       - name: Create Pull Request from release to master
         uses: peter-evans/create-pull-request@v7
         with:
-          branch: release-to-master
-          base: master
+          branch: release-to-production
+          base: production
           head: release
-          title: 'Merge release into master'
+          title: 'Merge release into production'
           body: |
-            This pull request merges changes from the release branch into master.
-          commit-message: 'Merge release into master'
+            This pull request merges changes from the release branch into production.
+          commit-message: 'Merge release into production'
           delete-branch: false
