@@ -22,6 +22,7 @@ jobs:
           fetch-depth: 0
 
       - name: Create SemVer Tag and Release
+        id: semver
         uses: K-Phoen/semver-release-action@v1.3.2
         with:
           release_branch: release
@@ -35,7 +36,7 @@ jobs:
         uses: requarks/changelog-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ steps.semver.outputs.new_tag }}
+          tag: ${{ steps.semver.outputs.tag }}
           writeToFile: true
 
       - name: Commit updated CHANGELOG.md
