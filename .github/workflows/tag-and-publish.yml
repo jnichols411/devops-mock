@@ -30,6 +30,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Update CHANGELOG.md
+        id: changelog
+        uses: requarks/changelog-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.semver.outputs.new_tag }}
+          writeToFile: true
+
+      - name: Commit updated CHANGELOG.md
+        if: steps.changelog.outputs.changes != ''
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add CHANGELOG.md
+          git commit -m "chore: update CHANGELOG.md for ${{ steps.semver.outputs.new_tag }}"
+
   # Publish New Release
   create_pr:
     needs: semver_release
