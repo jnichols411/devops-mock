@@ -1,14 +1,8 @@
 
 :root {
-    --font-display: sans-serif;    
-}
-
-* {
-
-}
-
-* {
-
+    /* fonts */
+    --font-display: sans-serif;
+    --font-body: serif;
 }
 
 * {
