@@ -8,6 +8,7 @@
     --color-danger: red;
     --color-info: lightblue;
     --color-success: lightgreen;
+    --color-alert: yellow;
 }
 
 * {

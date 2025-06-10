@@ -49,3 +49,4 @@ jobs:
             Automated PR: merging release into production after tagging
           commit-message: 'Merge release into production'
           delete-branch: false
+          push-to-fork: true
