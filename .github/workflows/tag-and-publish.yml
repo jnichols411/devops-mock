@@ -38,9 +38,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Debug - Show branch heads and diff
+        run: |
+          echo "✅ Current branch: $(git rev-parse --abbrev-ref HEAD)"
+          git fetch origin production || true
+          echo "🔍 Origin/production HEAD:"
+          git log origin/production -n 1 --oneline
+          echo "🔍 Release HEAD:"
+          git log origin/release -n 1 --oneline
+          echo "🔀 Diff between release and production:"
+          git diff origin/production origin/release --stat || true
+
       - name: Create Pull Request from release to production
         uses: peter-evans/create-pull-request@v7
         with:
+          fetch-depth: 0         # full history
+          fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: release-to-master         # head branch (source)
           base: production                  # base branch (destination)
