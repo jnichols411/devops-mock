@@ -41,11 +41,11 @@ jobs:
       - name: Create Pull Request from release to production
         uses: peter-evans/create-pull-request@v7
         with:
-          branch: release-to-production
-          base: production
-          head: release
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: release         # head branch (source)
+          base: production        # base branch (destination)
           title: 'Merge release into production'
           body: |
-            This pull request merges changes from the release branch into production.
+            Automated PR: merging release into production after tagging
           commit-message: 'Merge release into production'
           delete-branch: false
