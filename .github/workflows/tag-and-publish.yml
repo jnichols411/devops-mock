@@ -79,6 +79,13 @@ jobs:
       - name: Push changelog branch
         run: git push --set-upstream origin changelog/${NEW_TAG}
 
+      - name: Push empty commit to retrigger checks
+        if: steps.some_status_check_failed
+        run: |
+          git checkout changelog/${NEW_TAG}
+          git commit --allow-empty -m "🌐 retrigger status checks"
+          git push
+
       - name: Create, label, and squash-merge Changelog PR into release
         run: |
           gh pr create \
