@@ -15,6 +15,10 @@ jobs:
   semver_release:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+
+    outputs:
+      tag: ${{ steps.semver.outputs.tag }}
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,7 +49,7 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add CHANGELOG.md
-          git commit -m "chore: update CHANGELOG.md for ${{ steps.semver.outputs.new_tag }}"
+          git commit -m "chore: update CHANGELOG.md for ${{ steps.semver.outputs.tag }}"
 
       - name: Push updated CHANGELOG to release
         if: steps.changelog.outputs.changes != ''
@@ -56,6 +60,10 @@ jobs:
   create_pr:
     needs: semver_release
     runs-on: ubuntu-latest
+
+    env:
+      NEW_TAG: ${{ needs.semver_changelog.outputs.tag }}
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -83,8 +91,8 @@ jobs:
           gh pr create \
             --head release \
             --base production \
-            --title "🔀 Merge release ({{ steps.semver_changelog.outputs.tag }}) into production" \
-            --body "Automated PR created after tagging release: ${{ steps.semver_changelog.outputs.tag }}"
+            --title "🔀 Merge release (${NEW_TAG}) into production" \
+            --body "Automated PR created after tagging release: ${NEW_TAG}"
             
       # - name: Create Pull Request from release to production
       #   uses: peter-evans/create-pull-request@v7
