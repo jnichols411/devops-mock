@@ -1,0 +1,33 @@
+
+:root {
+    /* fonts */
+    --font-display: sans-serif;
+    --font-body: serif;
+  
+    /* text */
+    --txt-size-sm: 12px;
+    --txt-size-md: 16px;
+    --txt-size-lg: 16px;
+
+    /* colors */
+    --color-primary: white;
+    --color-secondary: black;
+    --color-danger: red;
+    --color-info: lightblue;
+    --color-success: lightgreen;
+    --color-alert: yellow;
+}
+
+* {
+
+}
+
+hmtl {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+body {
+    
+}
