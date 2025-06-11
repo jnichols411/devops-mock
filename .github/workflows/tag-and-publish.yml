@@ -49,11 +49,6 @@ jobs:
           git add CHANGELOG.md
           git commit -m "chore: update CHANGELOG.md for ${{ steps.semver.outputs.tag }}"
 
-      - name: Push updated CHANGELOG to release
-        if: steps.changelog.outputs.changes != ''
-        run: |
-          git push origin release
-
   # Publish New Release
   release_pr:
     needs: semver_changelog
