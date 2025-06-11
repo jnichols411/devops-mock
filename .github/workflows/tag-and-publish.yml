@@ -3,8 +3,7 @@ name: Tag And Publish New Release
 on:
   pull_request:
     types: [closed]
-    branches:
-      - release
+    branches: [release]
 
 permissions:
   contents: write
@@ -12,10 +11,9 @@ permissions:
 
 jobs:
   # Create Tag
-  semver_release:
+  semver_changelog:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-
     outputs:
       tag: ${{ steps.semver.outputs.tag }}
     
@@ -57,8 +55,8 @@ jobs:
           git push origin release
 
   # Publish New Release
-  create_pr:
-    needs: semver_release
+  release_pr:
+    needs: semver_changelog
     runs-on: ubuntu-latest
 
     env:
@@ -71,28 +69,57 @@ jobs:
           fetch-depth: 0         # full history
           fetch-tags: true
 
-      - name: Debug - Show branch heads and diff
+      - name: Print debug info
         run: |
-          echo "✅ Current branch: $(git rev-parse --abbrev-ref HEAD)"
-          git fetch origin production || true
-          echo "🔍 Origin/production HEAD:"
-          git log origin/production -n 1 --oneline
-          echo "🔍 Release HEAD:"
-          git log origin/release -n 1 --oneline
-          echo "🔀 Diff between release and production:"
-          git diff origin/production origin/release --stat || true
+          git fetch origin production
+          echo "production HEAD: $(git rev-parse origin/production)"
+          echo "release HEAD: $(git rev-parse origin/release)"
+          git diff --stat origin/production origin/release
 
       - name: Authenticate GitHub CLI
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
-      - name: Create Pull Request via CLI
+      - name: Create & auto-merge Changelog PR into release
+        if: needs.semver_changelog.outputs.tag != ''
+        run: |
+          gh pr create \
+            --head release \
+            --base release \
+            --title "🔖 Update CHANGELOG for ${NEW_TAG}" \
+            --body "Automated changelog update for ${NEW_TAG}"
+          gh pr merge \
+            --auto \
+            --delete-branch
+        working-directory: .
+      # - name: Create PR to release (changelog)
+      #   if: steps.changelog.outputs.changes != ''
+      #   run: |
+      #     gh pr create \
+      #       --head release \
+      #       --base release \
+      #       --title "🔖 Update CHANGELOG for ${NEW_TAG}" \
+      #       --body "Automated changelog update for ${NEW_TAG}"
+
+      - name: Create & auto-merge Release→Production PR
         run: |
           gh pr create \
             --head release \
             --base production \
-            --title "🔀 Merge release (${NEW_TAG}) into production" \
-            --body "Automated PR created after tagging release: ${NEW_TAG}"
+            --title "🔀 Merge ${NEW_TAG} into production" \
+            --body "Automated release after tagging ${NEW_TAG}"
+          gh pr merge \
+            --auto \
+            --delete-branch
+        working-directory: .
+
+      # - name: Create Pull Request via CLI
+      #   run: |
+      #     gh pr create \
+      #       --head release \
+      #       --base production \
+      #       --title "🔀 Merge release (${NEW_TAG}) into production" \
+      #       --body "Automated PR created after tagging release: ${NEW_TAG}"
             
       # - name: Create Pull Request from release to production
       #   uses: peter-evans/create-pull-request@v7
