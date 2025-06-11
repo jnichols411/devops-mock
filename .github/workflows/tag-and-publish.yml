@@ -64,37 +64,45 @@ jobs:
           fetch-depth: 0         # full history
           fetch-tags: true
 
-      - name: Print debug info
-        run: |
-          git fetch origin production
-          echo "production HEAD: $(git rev-parse origin/production)"
-          echo "release HEAD: $(git rev-parse origin/release)"
-          git diff --stat origin/production origin/release
-
       - name: Authenticate GitHub CLI
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: release
+          fetch-depth: 0
+
+      - name: Create changelog branch
+        run: |
+          git checkout -b changelog/${NEW_TAG}
+
+      - name: Re-apply changelog changes
+        uses: requarks/changelog-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ env.NEW_TAG }}
+          writeToFile: true
+
+      - name: Commit updated CHANGELOG.md
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add CHANGELOG.md
+          git commit -m "docs: update CHANGELOG.md for ${NEW_TAG}"
+
+      - name: Push changelog branch
+        run: git push --set-upstream origin changelog/${NEW_TAG}
+
       - name: Create & auto-merge Changelog PR into release
-        if: needs.semver_changelog.outputs.tag != ''
         run: |
           gh pr create \
-            --head release \
+            --head changelog/${NEW_TAG} \
             --base release \
             --title "🔖 Update CHANGELOG for ${NEW_TAG}" \
-            --body "Automated changelog update for ${NEW_TAG}"
-          gh pr merge \
-            --auto \
-            --delete-branch
-        working-directory: .
-      # - name: Create PR to release (changelog)
-      #   if: steps.changelog.outputs.changes != ''
-      #   run: |
-      #     gh pr create \
-      #       --head release \
-      #       --base release \
-      #       --title "🔖 Update CHANGELOG for ${NEW_TAG}" \
-      #       --body "Automated changelog update for ${NEW_TAG}"
+            --body "Automated changelog update for ${NEW_TAG}" && \
+          gh pr merge --auto --delete-branch
 
       - name: Create & auto-merge Release→Production PR
         run: |
@@ -102,28 +110,5 @@ jobs:
             --head release \
             --base production \
             --title "🔀 Merge ${NEW_TAG} into production" \
-            --body "Automated release after tagging ${NEW_TAG}"
-          gh pr merge \
-            --auto \
-            --delete-branch
-        working-directory: .
-
-      # - name: Create Pull Request via CLI
-      #   run: |
-      #     gh pr create \
-      #       --head release \
-      #       --base production \
-      #       --title "🔀 Merge release (${NEW_TAG}) into production" \
-      #       --body "Automated PR created after tagging release: ${NEW_TAG}"
-            
-      # - name: Create Pull Request from release to production
-      #   uses: peter-evans/create-pull-request@v7
-      #   with:
-      #     token: ${{ secrets.GITHUB_TOKEN }}
-      #     branch: release-to-production     # head branch (source)
-      #     base: production                  # base branch (destination)
-      #     title: 'Merge release into production'
-      #     body: |
-      #       Automated PR: merging release into production after tagging
-      #     commit-message: 'Merge release into production'
-      #     delete-branch: false
+            --body "Automated release after tagging ${NEW_TAG}" && \
+          gh pr merge --auto
