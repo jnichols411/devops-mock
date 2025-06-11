@@ -86,7 +86,8 @@ jobs:
             --base release \
             --title "🔖 Update CHANGELOG for ${NEW_TAG}" \
             --body "Automated changelog update for ${NEW_TAG}" && \
-          gh pr merge --auto --delete-branch
+          gh pr merge \
+            --auto --delete-branch --squash
 
       - name: Create & auto-merge Release→Production PR
         run: |
@@ -95,4 +96,5 @@ jobs:
             --base production \
             --title "🔀 Merge ${NEW_TAG} into production" \
             --body "Automated release after tagging ${NEW_TAG}" && \
-          gh pr merge --auto
+          gh pr merge \
+            --auto --squash
