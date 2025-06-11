@@ -74,14 +74,26 @@ jobs:
           echo "🔀 Diff between release and production:"
           git diff origin/production origin/release --stat || true
 
-      - name: Create Pull Request from release to production
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: release-to-production     # head branch (source)
-          base: production                  # base branch (destination)
-          title: 'Merge release into production'
-          body: |
-            Automated PR: merging release into production after tagging
-          commit-message: 'Merge release into production'
-          delete-branch: false
+      - name: Authenticate GitHub CLI
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Create Pull Request via CLI
+        run: |
+          gh pr create \
+            --head release \
+            --base production \
+            --title "🔀 Merge release ({{ steps.semver_changelog.outputs.tag }}) into production" \
+            --body "Automated PR created after tagging release: ${{ steps.semver_changelog.outputs.tag }}"
+            
+      # - name: Create Pull Request from release to production
+      #   uses: peter-evans/create-pull-request@v7
+      #   with:
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+      #     branch: release-to-production     # head branch (source)
+      #     base: production                  # base branch (destination)
+      #     title: 'Merge release into production'
+      #     body: |
+      #       Automated PR: merging release into production after tagging
+      #     commit-message: 'Merge release into production'
+      #     delete-branch: false
