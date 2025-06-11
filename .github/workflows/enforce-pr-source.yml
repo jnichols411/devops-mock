@@ -20,9 +20,11 @@ jobs:
           if [[ "${{ github.base_ref }}" == "production" && "${{ github.head_ref }}" != "release" ]]; then
             echo "❌ Pull requests to 'production' must originate from 'release'."
             exit 1
-          elif [[ "${{ github.base_ref }}" == "release" && "${{ github.head_ref }}" != "testing" ]]; then
-            echo "❌ Pull requests to 'release' must originate from 'testing'."
-            exit 1
+          elif [[ "${{ github.base_ref }}" == "release" && ! ( \
+                "${{ github.head_ref }}" == "testing" || \
+                "${{ github.head_ref }}" == changelog/* ) ]]; then
+            echo "❌ Pull requests to 'release' must originate from 'testing' or a changelog branch (release-changelog-*)."
+          exit 1
           elif [[ "${{ github.base_ref }}" == "testing" && "${{ github.head_ref }}" != dev-* ]]; then
             echo "❌ Pull requests to 'testing' must originate from a 'dev-*' branch."
             exit 1

@@ -22,4 +22,4 @@ jobs:
             minor
             patch
           add_comment: true
-          message: "❌ This PR must have exactly one of the following labels: `major`, `minor`, or `patch`."
+          message: "❌ This PR must have exactly one of the following labels: `major`, `minor`, `patch`, or 'changelog'."

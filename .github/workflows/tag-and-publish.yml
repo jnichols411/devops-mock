@@ -79,13 +79,16 @@ jobs:
       - name: Push changelog branch
         run: git push --set-upstream origin changelog/${NEW_TAG}
 
-      - name: Create & auto-merge Changelog PR into release
+      - name: Create, label, and squash-merge Changelog PR into release
         run: |
           gh pr create \
             --head changelog/${NEW_TAG} \
             --base release \
             --title "🔖 Update CHANGELOG for ${NEW_TAG}" \
             --body "Automated changelog update for ${NEW_TAG}" && \
+
+          gh pr edit "$PR_URL" --add-label changelog
+          
           gh pr merge \
             --auto --delete-branch --squash
 
