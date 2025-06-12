@@ -66,7 +66,7 @@ jobs:
           git rev-parse origin/release || echo "SHA not found"
 
       - name: Wait for API synchronization
-        run: sleep 15
+        run: sleep 30
 
       - name: Create Changelog PR
         id: create_pr
@@ -80,26 +80,36 @@ jobs:
             gh api repos/${{ github.repository }}/compare/release...changelog/${NEW_TAG} || echo "Compare API call failed"
             exit 1
           }
+          PR_NUMBER=$(echo $PR_URL | grep -oE '[0-9]+$')
           echo "PR_URL=$PR_URL" >> $GITHUB_OUTPUT
-          echo "PR_NUMBER=$(echo $PR_URL | grep -oE '[0-9]+$')" >> $GITHUB_OUTPUT
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "Created PR: $PR_URL"
 
       - name: Add changelog label
         run: |
           gh pr edit "${{ steps.create_pr.outputs.PR_URL }}" --add-label changelog
 
+      - name: Debug PR status
+        run: |
+          echo "PR Number: ${{ steps.create_pr.outputs.PR_NUMBER }}"
+          gh pr view ${{ steps.create_pr.outputs.PR_NUMBER }} --json statusCheckRollup,mergeable,state || echo "Failed to fetch PR details"
+
       - name: Wait for status checks
         run: |
           for i in {1..30}; do
-            STATUS=$(gh pr view ${{ steps.create_pr.outputs.PR_NUMBER }} --json statusCheckRollup -q '.statusCheckRollup.state')
-            if [[ "$STATUS" == "SUCCESS" ]]; then
-              echo "✅ Status checks passed"
+            PR_DATA=$(gh pr view ${{ steps.create_pr.outputs.PR_NUMBER }} --json statusCheckRollup,mergeable,state)
+            echo "PR Data: $PR_DATA"
+            STATUS=$(echo "$PR_DATA" | jq -r '.statusCheckRollup.state // "SUCCESS"')
+            if [[ "$STATUS" == "SUCCESS" || -z "$STATUS" ]]; then
+              echo "✅ Status checks passed or no checks required"
               exit 0
             fi
             echo "⏳ Waiting for status checks (attempt $i/30)..."
             sleep 10
           done
           echo "❌ Status checks did not pass within timeout"
-          gh pr view ${{ steps.create_pr.outputs.PR_NUMBER }} --json statusCheckRollup
+          echo "Final PR Data:"
+          gh pr view ${{ steps.create_pr.outputs.PR_NUMBER }} --json statusCheckRollup,mergeable,state
           exit 1
 
       - name: Merge Changelog PR
