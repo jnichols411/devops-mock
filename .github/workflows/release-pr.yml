@@ -31,6 +31,7 @@ jobs:
           echo "NEW_TAG: ${{ env.NEW_TAG }}"
           if [[ -z "${{ env.NEW_TAG }}" ]]; then
             echo "❌ NEW_TAG is empty"
+            echo "Inputs: ${{ toJson(inputs) }}"
             exit 1
           fi
 
