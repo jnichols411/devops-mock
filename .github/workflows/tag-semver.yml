@@ -32,3 +32,12 @@ jobs:
           tag_format: v%major%.%minor%.%patch%
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Debug tag output
+        run: |
+          echo "Tag output: ${{ steps.semver.outputs.tag }}"
+          if [[ -z "${{ steps.semver.outputs.tag }}" ]]; then
+            echo "❌ No tag output from semver-release-action"
+            git tag -l
+            exit 1
+          fi
