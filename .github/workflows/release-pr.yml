@@ -92,14 +92,20 @@ jobs:
       - name: Debug PR status
         run: |
           echo "PR Number: ${{ steps.create_pr.outputs.PR_NUMBER }}"
-          gh pr view ${{ steps.create_pr.outputs.PR_NUMBER }} --json statusCheckRollup,mergeable,state || echo "Failed to fetch PR details"
+          gh pr view ${{ steps.create_pr.outputs.PR_NUMBER }} --json statusCheckRollup,mergeable,state || {
+            echo "❌ Failed to fetch PR details"
+            exit 1
+          }
 
       - name: Wait for status checks
         run: |
           for i in {1..30}; do
-            PR_DATA=$(gh pr view ${{ steps.create_pr.outputs.PR_NUMBER }} --json statusCheckRollup,mergeable,state)
+            PR_DATA=$(gh pr view ${{ steps.create_pr.outputs.PR_NUMBER }} --json statusCheckRollup,mergeable,state) || {
+              echo "❌ Failed to fetch PR #${{ steps.create_pr.outputs.PR_NUMBER }}"
+              exit 1
+            }
             echo "PR Data: $PR_DATA"
-            STATUS=$(echo "$PR_DATA" | jq -r '.statusCheckRollup.state // "SUCCESS"')
+            STATUS=$(echo "$PR_DATA" | jq -r 'if .statusCheckRollup == [] or .statusCheckRollup == null then "SUCCESS" else .statusCheckRollup.state end')
             if [[ "$STATUS" == "SUCCESS" || -z "$STATUS" ]]; then
               echo "✅ Status checks passed or no checks required"
               exit 0
@@ -109,7 +115,7 @@ jobs:
           done
           echo "❌ Status checks did not pass within timeout"
           echo "Final PR Data:"
-          gh pr view ${{ steps.create_pr.outputs.PR_NUMBER }} --json statusCheckRollup,mergeable,state
+          gh pr view ${{ steps.create_pr.outputs.PR_NUMBER }} --json statusCheckRollup,mergeable,state || echo "❌ Failed to fetch final PR details"
           exit 1
 
       - name: Merge Changelog PR
