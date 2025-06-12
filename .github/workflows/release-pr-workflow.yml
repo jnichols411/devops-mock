@@ -22,7 +22,19 @@ jobs:
       new_tag: ${{ needs.trigger-semver.outputs.tag }}
 
   trigger-release-pr:
-    needs: trigger-changelog
+    needs: [trigger-semver, trigger-changelog]
     uses: ./.github/workflows/release-pr.yml
     with:
       new_tag: ${{ needs.trigger-semver.outputs.tag }}
+
+  debug-outputs:
+    needs: trigger-semver
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug trigger-semver output
+        run: |
+          echo "trigger-semver tag output: ${{ needs.trigger-semver.outputs.tag }}"
+          if [[ -z "${{ needs.trigger-semver.outputs.tag }}" ]]; then
+            echo "❌ trigger-semver tag output is empty"
+            exit 1
+          fi
