@@ -42,6 +42,17 @@ jobs:
           git checkout release
           git checkout -b changelog/${NEW_TAG}
 
+      - name: Debug commits and tags
+        run: |
+          echo "Commits since v0.17.8:"
+          git log v0.17.8..HEAD --oneline || echo "No commits found"
+          echo "PRs associated with commits:"
+          git log v0.17.8..HEAD --pretty=%H | while read commit; do
+            gh api repos/${{ github.repository }}/commits/$commit/pulls | jq '.[] | {number: .number, title: .title, state: .state}'
+          done || echo "No PRs found"
+          echo "Current tags:"
+          git tag -l
+
       - name: Re-apply changelog changes
         id: changelog
         uses: requarks/changelog-action@v1
@@ -50,7 +61,6 @@ jobs:
           tag: ${{ env.NEW_TAG }}
           writeToFile: true
           includeInvalidCommits: true
-          debug: true
 
       - name: Stage and commit changelog changes
         run: |
