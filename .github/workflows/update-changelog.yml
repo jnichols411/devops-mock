@@ -52,6 +52,18 @@ jobs:
           includeInvalidCommits: true
           debug: true
 
+      - name: Stage and commit changelog changes
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          if [[ -n "$(git status --porcelain CHANGELOG.md)" ]]; then
+            git add CHANGELOG.md
+            git commit -m "docs: update CHANGELOG.md for ${NEW_TAG}"
+          else
+            echo "❌ No changes to commit in CHANGELOG.md"
+            exit 1
+          fi
+
       - name: Debug changelog output
         run: |
           echo "Changelog action output:"
@@ -60,6 +72,8 @@ jobs:
           git status
           echo "Diff since last commit:"
           git diff HEAD^ HEAD -- CHANGELOG.md || echo "No diff found"
+          echo "Commits between tags:"
+          git log v0.17.8..HEAD --oneline || echo "No commits found"
 
       - name: Check for changelog changes
         id: check_changes
@@ -72,27 +86,16 @@ jobs:
             echo "changes_detected=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit updated CHANGELOG.md
-        if: steps.check_changes.outputs.changes_detected == 'true'
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add CHANGELOG.md
-          git commit -m "docs: update CHANGELOG.md for ${NEW_TAG}"
-
       - name: Push changelog branch
-        if: steps.check_changes.outputs.changes_detected == 'true'
         run: git push --set-upstream origin changelog/${NEW_TAG}
 
       - name: Push empty commit to retrigger checks
-        if: steps.check_changes.outputs.changes_detected == 'true'
         run: |
           git checkout changelog/${NEW_TAG}
           git commit --allow-empty -m "🌐 retrigger status checks"
           git push
 
       - name: Verify branch exists
-        if: steps.check_changes.outputs.changes_detected == 'true'
         run: |
           git fetch origin
           if git ls-remote --heads origin changelog/${NEW_TAG} | grep -q changelog/${NEW_TAG}; then
