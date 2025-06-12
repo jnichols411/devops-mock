@@ -31,7 +31,7 @@ jobs:
           echo "NEW_TAG: ${{ env.NEW_TAG }}"
           if [[ -z "${{ env.NEW_TAG }}" ]]; then
             echo "❌ NEW_TAG is empty"
-            echo "Inputs: ${{ toJson(inputs) }}"
+            echo "Inputs: ${{ toJSON(inputs) }}"
             exit 1
           fi
 
@@ -81,6 +81,7 @@ jobs:
             exit 1
           }
           echo "PR_URL=$PR_URL" >> $GITHUB_OUTPUT
+          echo "PR_NUMBER=$(echo $PR_URL | grep -oE '[0-9]+$')" >> $GITHUB_OUTPUT
 
       - name: Add changelog label
         run: |
@@ -89,7 +90,7 @@ jobs:
       - name: Wait for status checks
         run: |
           for i in {1..30}; do
-            STATUS=$(gh pr status --json statusCheckRollup -q '.currentBranch.statusCheckRollup.state' --branch changelog/${NEW_TAG})
+            STATUS=$(gh pr view ${{ steps.create_pr.outputs.PR_NUMBER }} --json statusCheckRollup -q '.statusCheckRollup.state')
             if [[ "$STATUS" == "SUCCESS" ]]; then
               echo "✅ Status checks passed"
               exit 0
@@ -98,7 +99,7 @@ jobs:
             sleep 10
           done
           echo "❌ Status checks did not pass within timeout"
-          gh pr status --json statusCheckRollup --branch changelog/${NEW_TAG}
+          gh pr view ${{ steps.create_pr.outputs.PR_NUMBER }} --json statusCheckRollup
           exit 1
 
       - name: Merge Changelog PR
