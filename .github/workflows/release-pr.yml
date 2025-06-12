@@ -26,15 +26,21 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Debug tag value
+        run: |
+          echo "NEW_TAG: ${{ env.NEW_TAG }}"
+          if [[ -z "${{ env.NEW_TAG }}" ]]; then
+            echo "❌ NEW_TAG is empty"
+            exit 1
+          fi
+
       - name: Authenticate GitHub CLI
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
-      - name: Fetch all branches
+      - name: Fetch branches
         run: |
-          git fetch origin +refs/heads/*:refs/heads/*
-          git fetch origin release:release
-          git fetch origin changelog/${NEW_TAG}:changelog/${NEW_TAG}
+          git fetch origin +refs/heads/*:refs/remotes/origin/* +refs/heads/changelog/${NEW_TAG}:refs/remotes/origin/changelog/${NEW_TAG}
 
       - name: Verify changelog branch
         run: |
