@@ -30,14 +30,55 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
+      - name: Sanitize tag for branch name
+        id: sanitize_tag
+        run: |
+          SANITIZED_TAG=$(echo "${NEW_TAG}" | sed 's/[^a-zA-Z0-9.-]/-/g')
+          echo "SANITIZED_TAG=$SANITIZED_TAG" >> $GITHUB_OUTPUT
+
+      - name: Fetch all branches
+        run: |
+          git fetch --all --force
+          git fetch origin refs/heads/changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }}:refs/heads/changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }}
+          git fetch origin release:release
+
+      - name: Verify changelog branch
+        run: |
+          if git ls-remote --heads origin changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }} | grep -q changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }}; then
+            echo "✅ Branch changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }} exists in remote"
+          else
+            echo "❌ Branch changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }} does not exist in remote"
+            exit 1
+          fi
+
+      - name: Debug branch state
+        run: |
+          echo "Listing all branches:"
+          git branch -r
+          echo "Commits in changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }} not in release:"
+          git log origin/release..origin/changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }} --oneline || echo "No commits found"
+          echo "Diff between branches:"
+          git diff origin/release..origin/changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }} --name-only || echo "No differences found"
+          echo "Head SHA of changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }}:"
+          git rev-parse origin/changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }} || echo "SHA not found"
+          echo "Head SHA of release:"
+          git rev-parse origin/release || echo "SHA not found"
+
+      - name: Wait for API synchronization
+        run: sleep 15
+
       - name: Create Changelog PR
         id: create_pr
         run: |
           PR_URL=$(gh pr create \
-            --head changelog/${NEW_TAG} \
+            --head changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }} \
             --base release \
-            --title "🔖 Update CHANGELOG for ${NEW_TAG}" \
-            --body "Automated changelog update for ${NEW_TAG}")
+            --title "🔖 Update CHANGELOG for ${{ steps.sanitize_tag.outputs.SANITIZED_TAG }}" \
+            --body "Automated changelog update for ${{ steps.sanitize_tag.outputs.SANITIZED_TAG }}" 2>&1) || {
+            echo "❌ Failed to create PR. Error: $PR_URL"
+            gh api repos/${{ github.repository }}/compare/release...changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }} || echo "Compare API call failed"
+            exit 1
+          }
           echo "PR_URL=$PR_URL" >> $GITHUB_OUTPUT
 
       - name: Add changelog label
@@ -47,7 +88,7 @@ jobs:
       - name: Wait for status checks
         run: |
           for i in {1..30}; do
-            STATUS=$(gh pr status --json statusCheckRollup -q '.currentBranch.statusCheckRollup.state' --branch changelog/${NEW_TAG})
+            STATUS=$(gh pr status --json statusCheckRollup -q '.currentBranch.statusCheckRollup.state' --branch changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }})
             if [[ "$STATUS" == "SUCCESS" ]]; then
               echo "✅ Status checks passed"
               exit 0
@@ -56,7 +97,7 @@ jobs:
             sleep 10
           done
           echo "❌ Status checks did not pass within timeout"
-          gh pr status --json statusCheckRollup --branch changelog/${NEW_TAG}
+          gh pr status --json statusCheckRollup --branch changelog/${{ steps.sanitize_tag.outputs.SANITIZED_TAG }}
           exit 1
 
       - name: Merge Changelog PR
@@ -74,7 +115,7 @@ jobs:
           PR_URL=$(gh pr create \
             --head release \
             --base production \
-            --title "🔀 Merge ${NEW_TAG} into production" \
-            --body "Automated release after tagging ${NEW_TAG}")
+            --title "🔀 Merge ${{ steps.sanitize_tag.outputs.SANITIZED_TAG }} into production" \
+            --body "Automated release after tagging ${{ steps.sanitize_tag.outputs.SANITIZED_TAG }}")
           gh pr merge "$PR_URL" \
             --auto --squash
