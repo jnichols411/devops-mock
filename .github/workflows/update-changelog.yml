@@ -1,0 +1,63 @@
+name: Update Changelog
+
+on:
+  workflow_call:
+    inputs:
+      new_tag:
+        description: "The new SemVer tag"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update_changelog:
+    runs-on: ubuntu-latest
+    env:
+      NEW_TAG: ${{ inputs.new_tag }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Authenticate GitHub CLI
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: release
+          fetch-depth: 0
+
+      - name: Create changelog branch
+        run: |
+          git checkout -b changelog/${NEW_TAG}
+
+      - name: Re-apply changelog changes
+        uses: requarks/changelog-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ env.NEW_TAG }}
+          writeToFile: true
+
+      - name: Commit updated CHANGELOG.md
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add CHANGELOG.md
+          git commit -m "docs: update CHANGELOG.md for ${NEW_TAG}"
+
+      - name: Push changelog branch
+        run: git push --set-upstream origin changelog/${NEW_TAG}
+
+      - name: Push empty commit to retrigger checks
+        run: |
+          git checkout changelog/${NEW_TAG}
+          git commit --allow-empty -m "🌐 retrigger status checks"
+          git push
