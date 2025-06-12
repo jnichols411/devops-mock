@@ -11,6 +11,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  checks: read
 
 jobs:
   release_pr:
@@ -29,18 +30,44 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
-      - name: Create, label, and squash-merge Changelog PR into release
+      - name: Create Changelog PR
+        id: create_pr
         run: |
           PR_URL=$(gh pr create \
             --head changelog/${NEW_TAG} \
             --base release \
             --title "🔖 Update CHANGELOG for ${NEW_TAG}" \
             --body "Automated changelog update for ${NEW_TAG}")
-          
-          gh pr edit "$PR_URL" --add-label changelog
-          
-          gh pr merge "$PR_URL" \
-            --auto --delete-branch --squash
+          echo "PR_URL=$PR_URL" >> $GITHUB_OUTPUT
+
+      - name: Add changelog label
+        run: |
+          gh pr edit "${{ steps.create_pr.outputs.PR_URL }}" --add-label changelog
+
+      - name: Wait for status checks
+        run: |
+          for i in {1..30}; do
+            STATUS=$(gh pr status --json statusCheckRollup -q '.currentBranch.statusCheckRollup.state' --branch changelog/${NEW_TAG})
+            if [[ "$STATUS" == "SUCCESS" ]]; then
+              echo "✅ Status checks passed"
+              exit 0
+            fi
+            echo "⏳ Waiting for status checks (attempt $i/30)..."
+            sleep 10
+          done
+          echo "❌ Status checks did not pass within timeout"
+          gh pr status --json statusCheckRollup --branch changelog/${NEW_TAG}
+          exit 1
+
+      - name: Merge Changelog PR
+        run: |
+          gh pr merge "${{ steps.create_pr.outputs.PR_URL }}" \
+            --squash --delete-branch \
+            --admin || {
+              echo "❌ Failed to merge PR. Debugging info:"
+              gh pr view "${{ steps.create_pr.outputs.PR_URL }}" --json state,mergeable,labels,headRefName,baseRefName
+              exit 1
+            }
 
       - name: Create & auto-merge Release→Production PR
         run: |
