@@ -1,0 +1,28 @@
+name: Tag And Publish New Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [release]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  trigger-semver:
+    if: github.event.pull_request.merged == true
+    uses: ./.github/workflows/tag-semver.yml
+
+  trigger-changelog:
+    needs: trigger-semver
+    uses: ./.github/workflows/update-changelog.yml
+    with:
+      new_tag: ${{ needs.trigger-semver.outputs.tag }}
+
+  trigger-release-pr:
+    needs: trigger-changelog
+    uses: ./.github/workflows/release-pr.yml
+    with:
+      new_tag: ${{ needs.trigger-semver.outputs.tag }}
