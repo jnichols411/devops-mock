@@ -43,11 +43,23 @@ jobs:
           git checkout -b changelog/${NEW_TAG}
 
       - name: Re-apply changelog changes
+        id: changelog
         uses: requarks/changelog-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ env.NEW_TAG }}
           writeToFile: true
+          includeInvalidCommits: true
+          debug: true
+
+      - name: Debug changelog output
+        run: |
+          echo "Changelog action output:"
+          cat CHANGELOG.md || echo "CHANGELOG.md not found"
+          echo "Git status:"
+          git status
+          echo "Diff since last commit:"
+          git diff HEAD^ HEAD -- CHANGELOG.md || echo "No diff found"
 
       - name: Check for changelog changes
         id: check_changes
