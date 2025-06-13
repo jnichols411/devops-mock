@@ -65,6 +65,17 @@ jobs:
           echo "Head SHA of release:"
           git rev-parse origin/release || echo "SHA not found"
 
+      - name: Validate changelog-only changes
+        run: |
+          DIFF_FILES=$(git diff origin/release..origin/changelog/${NEW_TAG} --name-only)
+          if [[ "$DIFF_FILES" == "CHANGELOG.md" || -z "$DIFF_FILES" ]]; then
+            echo "✅ Only CHANGELOG.md modified or no changes"
+          else
+            echo "❌ Unexpected changes detected:"
+            echo "$DIFF_FILES"
+            exit 1
+          fi
+
       - name: Wait for API synchronization
         run: sleep 30
 
@@ -120,13 +131,20 @@ jobs:
 
       - name: Merge Changelog PR
         run: |
-          gh pr merge "${{ steps.create_pr.outputs.PR_URL }}" \
-            --squash --delete-branch \
-            --admin || {
-              echo "❌ Failed to merge PR. Debugging info:"
+          gh api \
+            -X PUT \
+            -H "Accept: application/vnd.github+json" \
+            repos/${{ github.repository }}/pulls/${{ steps.create_pr.outputs.PR_NUMBER }}/merge \
+            -f merge_method=squash \
+            -f commit_title="Update CHANGELOG for ${NEW_TAG}" \
+            -f commit_message="Automated changelog update for ${NEW_TAG}" || {
+              echo "❌ Failed to merge PR via API. Debugging info:"
               gh pr view "${{ steps.create_pr.outputs.PR_URL }}" --json state,mergeable,labels,headRefName,baseRefName
               exit 1
             }
+          gh api \
+            -X DELETE \
+            repos/${{ github.repository }}/git/refs/heads/changelog/${NEW_TAG} || echo "Failed to delete branch changelog/${NEW_TAG}"
 
       - name: Create & auto-merge Release→Production PR
         run: |
