@@ -37,16 +37,23 @@ jobs:
 
       - name: Authenticate GitHub CLI
         run: |
+          echo "Debug: Checking CHANGELOG_PAT secret"
           if [[ -z "${{ secrets.CHANGELOG_PAT }}" ]]; then
             echo "❌ CHANGELOG_PAT secret is empty or not set"
-            exit 1
+            echo "Debug: Falling back to GITHUB_TOKEN"
+            echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token || {
+              echo "❌ Failed to authenticate with GITHUB_TOKEN"
+              exit 1
+            }
+            echo "✅ Authenticated with GITHUB_TOKEN (limited permissions)"
+          else
+            echo "✅ CHANGELOG_PAT secret is set"
+            timeout 30s bash -c 'echo "${{ secrets.CHANGELOG_PAT }}" | gh auth login --with-token' || {
+              echo "❌ Failed to authenticate with CHANGELOG_PAT"
+              exit 1
+            }
+            echo "✅ Successfully authenticated with CHANGELOG_PAT"
           fi
-          echo "✅ CHANGELOG_PAT secret is set"
-          timeout 30s bash -c 'echo "${{ secrets.CHANGELOG_PAT }}" | gh auth login --with-token' || {
-            echo "❌ Failed to authenticate with CHANGELOG_PAT"
-            exit 1
-          }
-          echo "✅ Successfully authenticated with GitHub CLI"
 
       - name: Fetch branches
         run: |
